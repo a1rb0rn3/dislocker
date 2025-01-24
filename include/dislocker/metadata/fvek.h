@@ -36,6 +36,8 @@ int get_fvek(dis_metadata_t dis_metadata, void* vmk_datum, void** fvek_datum);
 
 int build_fvek_from_file(dis_config_t* cfg, void** fvek_datum);
 
+int write_fvek_to_file(dis_config_t* cfg, datum_key_t* fvek_datum);
+
 
 
 #endif /* FVEK_H */

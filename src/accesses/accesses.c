@@ -184,6 +184,18 @@ int dis_get_access(dis_context_t dis_ctx)
 	{
 		if(!get_fvek(dis_ctx->metadata, vmk_datum, &fvek_datum))
 			return DIS_RET_ERROR_FVEK_RETRIEVAL;
+
+		/*
+		 * Dump FVEK to file if option is enabled
+		 */
+		if(dis_dump_fvek(dis_ctx))
+		{
+			dis_printf(L_INFO, "Dumping FVEK decrypted by VMK\n");
+
+			/* Write vmk to path specified */
+			if(!write_fvek_to_file(&dis_ctx->cfg, (datum_key_t*) fvek_datum))
+				dis_printf(L_ERROR, "Unable to dump FVEK\n");
+		}
 	}
 
 

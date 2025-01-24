@@ -44,6 +44,8 @@ typedef enum {
 	DIS_OPT_SET_FVEK_FILE_PATH,
 	DIS_OPT_USE_VMK_FILE,
 	DIS_OPT_SET_VMK_FILE_PATH,
+	DIS_OPT_DUMP_FVEK,
+	DIS_OPT_SET_FVEK_DUMP_FILE_PATH,
 	DIS_OPT_VERBOSITY,
 	DIS_OPT_LOG_FILE_PATH,
 	DIS_OPT_FORCE_BLOCK,
@@ -87,6 +89,7 @@ void dis_print_args(dis_context_t dis_ctx);
 
 int dis_is_read_only(dis_context_t dis_ctx);
 int dis_is_volume_state_checked(dis_context_t dis_ctx);
+int dis_dump_fvek(dis_context_t dis_ctx);
 
 
 #endif /* DISLOCKER_CFG_H */

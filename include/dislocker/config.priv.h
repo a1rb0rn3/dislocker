@@ -53,6 +53,9 @@ typedef enum {
 	 * if mounted using fuse
 	 */
 	DIS_FLAG_DONT_CHECK_VOLUME_STATE = (1 << 1),
+
+	/* Dump the FVEK if the volume get decrypted */
+	DIS_FLAG_DUMP_FVEK = (1 << 2),
 } dis_flags_e;
 
 
@@ -80,6 +83,8 @@ typedef struct _dis_cfg {
 	char*         fvek_file;
 	/* Use directly the VMK file DECRYPT_MEAN */
 	char*         vmk_file;
+	/* Used to dump the FVEK to file */
+	char*         fvek_dump_file;
 
 	/* Output verbosity */
 	DIS_LOGS      verbosity;

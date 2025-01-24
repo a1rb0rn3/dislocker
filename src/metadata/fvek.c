@@ -237,3 +237,47 @@ int build_fvek_from_file(dis_config_t* cfg, void** fvek_datum)
 
 	return TRUE;
 }
+
+
+/**
+ * Write the FVEK using the FVEK dump file.
+ *
+ * @param cfg The configuration structure, therefore having the VMK file
+ * @param fvek_datum The FVEK datum
+ * @return TRUE if result can be trusted, FALSE otherwise
+ */
+int write_fvek_to_file(dis_config_t* cfg, datum_key_t* fvek_datum)
+{
+	if(!cfg)
+		return FALSE;
+
+	int   file_fd = -1;
+	uint8_t* fvek    = NULL;
+	ssize_t rs;
+	size_t size_fvek = 0;
+
+	if(!get_payload_safe(fvek_datum, (void**)&fvek, &size_fvek))
+	{
+		dis_printf(L_ERROR, "Can't get the FVEK datum payload. Abort.\n");
+		return DIS_RET_ERROR_DISLOCKER_INVAL;
+	}
+
+	file_fd = dis_open(cfg->fvek_dump_file, O_CREAT | O_WRONLY);
+	if(file_fd == -1)
+	{
+		dis_printf(L_ERROR, "Cannot open FVEK dump file (%s)\n", cfg->fvek_dump_file);
+		return FALSE;
+	}
+
+	/* Write FVEK*/
+	rs = dis_write(file_fd, fvek, size_fvek);
+	if(rs != size_fvek)
+	{
+		dis_printf(L_ERROR, "Cannot write FVEK key in the FVEK dump file\n");
+		return FALSE;
+	}
+
+	dis_close(file_fd);
+
+	return TRUE;
+}

@@ -86,6 +86,12 @@ static void setvmk(dis_context_t dis_ctx, char* optarg)
 	dis_setopt(dis_ctx, DIS_OPT_USE_VMK_FILE, &trueval);
 	dis_setopt(dis_ctx, DIS_OPT_SET_VMK_FILE_PATH, optarg);
 }
+static void setdumpfvek(dis_context_t dis_ctx, char* optarg)
+{
+	int trueval = TRUE;
+	dis_setopt(dis_ctx, DIS_OPT_DUMP_FVEK, &trueval);
+	dis_setopt(dis_ctx, DIS_OPT_SET_FVEK_DUMP_FILE_PATH, optarg);
+}
 static void setlogfile(dis_context_t dis_ctx, char* optarg)
 {
 	dis_setopt(dis_ctx, DIS_OPT_LOG_FILE_PATH, optarg);
@@ -146,6 +152,7 @@ static struct _dis_options dis_opt[] = {
 	{ {"help",              no_argument,       NULL, 'h'}, NULL },
 	{ {"fvek",              required_argument, NULL, 'k'}, setfvek },
 	{ {"vmk",               required_argument, NULL, 'K'}, setvmk },
+	{ {"dump-fvek",         required_argument, NULL, 'D'}, setdumpfvek },
 	{ {"logfile",           required_argument, NULL, 'l'}, setlogfile },
 	{ {"offset",            required_argument, NULL, 'O'}, setoffset },
 	{ {"options",           required_argument, NULL, 'o'}, NULL },
@@ -172,7 +179,7 @@ PROGNAME " by " AUTHOR ", v" VERSION " (compiled for " __OS "/" __ARCH ")\n"
 "Compiled version: " VERSION_DBG "\n"
 #endif
 "\n"
-"Usage: " PROGNAME " [-hqrsv] [-l LOG_FILE] [-O OFFSET] [-V VOLUME DECRYPTMETHOD -F[N]] [-- ARGS...]\n"
+"Usage: " PROGNAME " [-hqrsv] [-l LOG_FILE] [-O OFFSET] [-V VOLUME DECRYPTMETHOD -F[N]] [-D FVEK_DUMP_FILE] [-- ARGS...]\n"
 "    with DECRYPTMETHOD = -p[RECOVERY_PASSWORD]|-f BEK_FILE|-u[USER_PASSWORD]|-k FVEK_FILE|-K VMK_FILE|-c\n"
 "\n"
 "Options:\n"
@@ -183,6 +190,8 @@ PROGNAME " by " AUTHOR ", v" VERSION " (compiled for " __OS "/" __ARCH ")\n"
 "    -h, --help            print this help and exit\n"
 "    -k, --fvek FVEK_FILE  decrypt volume using the FVEK directly\n"
 "    -K, --vmk VMK_FILE    decrypt volume using the VMK directly\n"
+"    -D, --dump-fvek FVEK_DUMP_FILE\n"
+"                          dump the FVEK decrypted by the VMK\n"
 "    -l, --logfile LOG_FILE\n"
 "                          put messages into this file (stdout by default)\n"
 "    -O, --offset OFFSET   BitLocker partition offset, in bytes (default is 0)\n"
@@ -259,7 +268,7 @@ int dis_getopts(dis_context_t dis_ctx, int argc, char** argv)
 
 
 	/* Options which could be passed as argument */
-	const char short_opts[] = "cf:F::hk:K:l:O:o:p::qrsu::vV:";
+	const char short_opts[] = "cf:F::hk:K:D:l:O:o:p::qrsu::vV:";
 	struct option* long_opts;
 
 	if(!dis_ctx || !argv)
@@ -320,6 +329,12 @@ int dis_getopts(dis_context_t dis_ctx, int argc, char** argv)
 			{
 				dis_setopt(dis_ctx, DIS_OPT_USE_VMK_FILE, &trueval);
 				dis_setopt(dis_ctx, DIS_OPT_SET_VMK_FILE_PATH, optarg);
+				break;
+			}
+			case 'D':
+			{
+				dis_setopt(dis_ctx, DIS_OPT_DUMP_FVEK, &trueval);
+				dis_setopt(dis_ctx, DIS_OPT_SET_FVEK_DUMP_FILE_PATH, optarg);
 				break;
 			}
 			case 'l':
@@ -484,6 +499,15 @@ int dis_getopt(dis_context_t dis_ctx, dis_opt_e opt_name, void** opt_value)
 		case DIS_OPT_SET_VMK_FILE_PATH:
 			*opt_value = cfg->vmk_file;
 			break;
+		case DIS_OPT_DUMP_FVEK:
+			if(cfg->flags & DIS_FLAG_DUMP_FVEK)
+				*opt_value = (void*) TRUE;
+			else
+				*opt_value = (void*) FALSE;
+			break;
+		case DIS_OPT_SET_FVEK_DUMP_FILE_PATH:
+			*opt_value = cfg->fvek_dump_file;
+			break;
 		case DIS_OPT_VERBOSITY:
 			*opt_value = (void*) cfg->verbosity;
 			break;
@@ -633,6 +657,26 @@ int dis_setopt(dis_context_t dis_ctx, dis_opt_e opt_name, const void* opt_value)
 			else
 				cfg->vmk_file = strdup((const char*) opt_value);
 			break;
+		case DIS_OPT_DUMP_FVEK:
+			if (opt_value == NULL)
+				cfg->flags &= (unsigned) ~DIS_FLAG_DUMP_FVEK;
+			else
+			{
+				int flag = *(int*) opt_value;
+				if(flag == TRUE)
+					cfg->flags |= DIS_FLAG_DUMP_FVEK;
+				else
+					cfg->flags &= (unsigned) ~DIS_FLAG_DUMP_FVEK;
+			}
+			break;
+		case DIS_OPT_SET_FVEK_DUMP_FILE_PATH:
+			if(cfg->fvek_dump_file != NULL)
+				free(cfg->fvek_dump_file);
+			if(opt_value == NULL)
+				cfg->fvek_dump_file = NULL;
+			else
+				cfg->fvek_dump_file = strdup((const char*) opt_value);
+			break;
 		case DIS_OPT_VERBOSITY:
 			if(opt_value == NULL)
 				cfg->verbosity = 0;
@@ -739,6 +783,9 @@ void dis_free_args(dis_context_t dis_ctx)
 	if(cfg->vmk_file)
 		memclean(cfg->vmk_file, strlen(cfg->vmk_file) + sizeof(char));
 
+	if(cfg->fvek_dump_file)
+		memclean(cfg->fvek_dump_file, strlen(cfg->fvek_dump_file) + sizeof(char));
+
 	if(cfg->volume_path)
 		dis_free(cfg->volume_path);
 
@@ -827,4 +874,11 @@ int dis_is_volume_state_checked(dis_context_t dis_ctx)
 	if(!dis_ctx)
 		return -1;
 	return !(dis_ctx->cfg.flags & DIS_FLAG_DONT_CHECK_VOLUME_STATE);
+}
+
+int dis_dump_fvek(dis_context_t dis_ctx)
+{
+	if(!dis_ctx)
+		return -1;
+	return (dis_ctx->cfg.flags & DIS_FLAG_DUMP_FVEK);
 }
